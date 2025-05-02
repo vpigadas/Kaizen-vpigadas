@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Sports Events</string>
+
+    <!-- Button Labels -->
+    <string name="retry">Retry</string>
+    <string name="refresh">Refresh data</string>
+    <string name="settings">Settings</string>
+
+    <!-- Error Messages -->
+    <string name="error_loading_data">Failed to load data: %1$s</string>
+    <string name="error_no_internet">No internet connection. Please check your network and try again.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+
+    <!-- Connectivity Messages -->
+    <string name="connection_restored">Connection restored</string>
+    <string name="open_settings">Open Settings</string>
+
+    <!-- Action Descriptions -->
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="enable_notifications">Enable notifications</string>
+    <string name="disable_notifications">Disable notifications</string>
+
+    <!-- Time Formats -->
+    <string name="started">Started</string>
+    <string name="starts_in_days">Starts in %1$d days</string>
+    <string name="starts_in_hours">Starts in %1$d hours</string>
+    <string name="starts_in_minutes">Starts in %1$d minutes</string>
+    <string name="starts_in_seconds">Starts in %1$d seconds</string>
+    <string name="starts">Starts in </string>
+    <string name="hours_format">%dh</string>
+    <string name="minutes_format">%dm</string>
+    <string name="seconds_format">%ds</string>
+
+    <!-- Section Headers -->
+    <string name="section_popular">Popular Sports</string>
+    <string name="section_upcoming">Upcoming Events</string>
+    <string name="section_live">Live Now</string>
+    <string name="section_tomorrow">Tomorrow\'s Highlights</string>
+
+    <!-- Sport Events -->
+    <string name="event_football">Football: USA vs Canada</string>
+    <string name="event_basketball">Basketball: Lakers vs Bulls</string>
+    <string name="event_tennis">Tennis: Grand Slam Finals</string>
+    <string name="event_baseball">Baseball: Yankees vs Red Sox</string>
+    <string name="event_soccer">Soccer: Premier League</string>
+    <string name="event_formula_one">Formula 1: Monaco Grand Prix</string>
+    <string name="event_golf">Golf: PGA Championship</string>
+    <string name="event_cycling">Cycling: Tour de France Stage 5</string>
+</resources>
