@@ -1,11 +1,12 @@
 package com.vipigadas.kaizen.features.sport
 
+import androidx.lifecycle.Lifecycle
 import com.vipigadas.kaizen.api.ErrorCodes
+import com.vipigadas.kaizen.api.Event
 import com.vipigadas.kaizen.api.NetworkHandler
 import com.vipigadas.kaizen.api.NetworkResult
 import com.vipigadas.kaizen.api.Sport
 import com.vipigadas.kaizen.api.SportsApiService
-import com.vipigadas.kaizen.api.SportsData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -18,6 +19,9 @@ interface SportRepository {
     fun toggleExpand(sportId: String): Result<Boolean>
     fun isExpanded(sportId: String): Boolean
     fun isFavorite(eventId: String): Boolean
+    fun applyFilters(searchQuery: String): List<Sport>
+    fun showFavoriteEvents(enable: Boolean): List<Sport>
+    fun getEventById(eventId: String): Event?
 }
 
 /**
@@ -108,4 +112,47 @@ class SportRepositoryImpl @Inject constructor(
 
     override fun isExpanded(sportId: String): Boolean = !(disableSportSection.contains(sportId))
     override fun isFavorite(eventId: String): Boolean = favoriteEvents.contains(eventId)
+
+    /**
+     * Apply search query and sport filters to the original sections
+     */
+    override fun applyFilters(searchQuery: String): List<Sport> = originalData.map { section ->
+
+        // Apply search filter to events
+        val filteredEvents = if (searchQuery.isBlank()) {
+            section.events
+        } else {
+            section.events.filter { event ->
+                event.name.lowercase().contains(searchQuery)
+            }
+        }
+
+        // Auto-expand sections with matching events for search
+        val shouldExpand = searchQuery.isNotBlank() && filteredEvents.isNotEmpty()
+
+        // Check if the section should be expanded based on search or previous state
+        val isExpanded = shouldExpand ||
+                (searchQuery.isBlank() && isExpanded(section.id))
+
+        section.copy(events = filteredEvents)
+    }.filter { section ->
+        // Remove sections with no events after filtering
+        searchQuery.isBlank() || section.events.isNotEmpty()
+    }
+
+    override fun showFavoriteEvents(enable: Boolean): List<Sport> = when (enable) {
+        true -> {
+            originalData.mapNotNull { sport ->
+                when (sport.events.any { favoriteEvents.contains(it.id) }) {
+                    true -> sport.copy(events = sport.events.filter { favoriteEvents.contains(it.id) })
+                    false -> null
+                }
+            }
+        }
+
+        false -> originalData
+    }
+
+    override fun getEventById(eventId: String): Event? =
+        originalData.firstOrNull { it.events.any { event -> event.id == eventId } }?.events?.firstOrNull { it.id == eventId }
 }

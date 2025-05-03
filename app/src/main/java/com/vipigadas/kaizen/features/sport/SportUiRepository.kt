@@ -7,6 +7,7 @@ import com.vipigadas.kaizen.api.Sport
 import com.vipigadas.kaizen.ui.features.main.model.EventUiModel
 import com.vipigadas.kaizen.ui.features.main.model.SportUiModel
 import com.vipigadas.kaizen.ui.features.main.model.UiModelType
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 
 class SportUiRepository(
@@ -35,6 +36,9 @@ class SportUiRepository(
         )
     }
 
+    fun updateEventTimer(event: Event): String =
+        calculateTimeRemaining(event.getTimestampInMillis())
+
     /**
      * Calculates a human-readable string for time remaining until the event starts.
      * Uses string resources for localization.
@@ -60,7 +64,7 @@ class SportUiRepository(
 
         return when {
             // More than 3 hours - use original format with largest unit
-            differenceMillis > 3.hours.inWholeMilliseconds -> {
+            differenceMillis > 4.hours.inWholeMilliseconds -> {
                 when {
                     days > 0 -> context.getString(R.string.starts_in_days, days)
                     hours > 0 -> context.getString(R.string.starts_in_hours, hours)

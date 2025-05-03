@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vipigadas.kaizen.api.Sport
+import com.vipigadas.kaizen.ui.features.main.model.EventUiModel
 import com.vipigadas.kaizen.ui.features.main.model.UiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,17 +26,14 @@ class SportViewModel @Inject constructor(
         repository.isExpanded(it.id)
     })
 
-    // Original sections from the repository to be used for filtering
-    private var originalSections: List<Sport> = emptyList()
-
     // UI state data class
     data class SportsListUiState(
         val isLoading: Boolean = false,
         val items: List<UiModel> = emptyList(),
         val error: String? = null,
         val isSearchActive: Boolean = false,
+        val isFavoriteActive: Boolean = false,
         val searchQuery: String = "",
-        val selectedSports: Set<String> = emptySet()
     )
 
     // Private mutable state flow
@@ -60,10 +58,9 @@ class SportViewModel @Inject constructor(
                 repository.getSportsSections().fold(
                     onSuccess = { sections ->
                         // Store the original sections for filtering
-                        originalSections = sections
 
                         // Apply any active filters
-                        if (_uiState.value.isSearchActive || _uiState.value.selectedSports.isNotEmpty()) {
+                        if (_uiState.value.isSearchActive) {
                             applyFilters()
                         } else {
                             _uiState.value = _uiState.value.copy(
@@ -123,6 +120,12 @@ class SportViewModel @Inject constructor(
         return uiModels
     }
 
+    fun updateEventTime(uiModel: EventUiModel): String =
+        repository.getEventById(uiModel.id)
+            ?.let { event -> uiRepository.updateEventTimer(event) }
+            ?: uiModel.startTime
+
+
     fun retry() {
         loadSportsEvents()
     }
@@ -154,59 +157,12 @@ class SportViewModel @Inject constructor(
     }
 
     /**
-     * Toggle sport filter selection
-     */
-    fun toggleSportFilter(sport: String) {
-        val currentFilters = _uiState.value.selectedSports.toMutableSet()
-        if (currentFilters.contains(sport)) {
-            currentFilters.remove(sport)
-        } else {
-            currentFilters.add(sport)
-        }
-
-        _uiState.value = _uiState.value.copy(selectedSports = currentFilters)
-        applyFilters()
-    }
-
-    /**
      * Apply search query and sport filters to the original sections
      */
     private fun applyFilters() {
         val searchQuery = _uiState.value.searchQuery.lowercase()
-        val selectedSports = _uiState.value.selectedSports
 
-        val filteredSections = originalSections.map { section ->
-            // Apply sport filter
-            if (selectedSports.isNotEmpty() && !selectedSports.contains(section.name)) {
-                // If sports are filtered and this sport is not selected, return with empty events
-                section.copy(events = emptyList())
-            } else {
-                // Apply search filter to events
-                val filteredEvents = if (searchQuery.isBlank()) {
-                    section.events
-                } else {
-                    section.events.filter { event ->
-                        event.name.lowercase().contains(searchQuery)
-                    }
-                }
-
-                // Auto-expand sections with matching events for search
-                val shouldExpand = searchQuery.isNotBlank() && filteredEvents.isNotEmpty()
-
-                // Check if the section should be expanded based on search or previous state
-                val isExpanded = shouldExpand ||
-                        (searchQuery.isBlank() && repository.isExpanded(section.id))
-
-                section.copy(events = filteredEvents)
-            }
-        }.filter { section ->
-            // Remove sections with no events after filtering
-            if (searchQuery.isBlank() && selectedSports.isEmpty()) {
-                true // Keep all sections if no filters applied
-            } else {
-                section.events.isNotEmpty() // Otherwise keep only sections with events
-            }
-        }
+        val filteredSections = repository.applyFilters(searchQuery)
 
         _uiState.value = _uiState.value.copy(
             isLoading = false,
@@ -227,4 +183,16 @@ class SportViewModel @Inject constructor(
         )
         applyFilters()
     }
+
+    fun showOnlyFavorite() {
+        val filteredSections = repository.showFavoriteEvents(!_uiState.value.isFavoriteActive)
+
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            items = convertToUiModelList(filteredSections),
+            error = null,
+            isFavoriteActive = !_uiState.value.isFavoriteActive
+        )
+    }
 }
+

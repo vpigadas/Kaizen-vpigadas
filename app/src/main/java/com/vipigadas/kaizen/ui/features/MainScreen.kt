@@ -2,14 +2,52 @@ package com.vipigadas.kaizen.ui.features
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vipigadas.kaizen.api.Event
 import com.vipigadas.kaizen.features.sport.SportViewModel
 import com.vipigadas.kaizen.ui.features.main.model.EventUiModel
 import com.vipigadas.kaizen.ui.features.main.model.SportUiModel
@@ -33,6 +72,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +115,13 @@ fun SportScreen(
                         }) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
-                        IconButton(onClick = { /* Handle filter click */ }) {
-                            Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                        IconButton(onClick = { viewModel.showOnlyFavorite() }) {
+                            if (uiState.isFavoriteActive) {
+                                Icon(Icons.Default.Favorite, contentDescription = "Filter")
+                            } else {
+                                Icon(Icons.Default.FavoriteBorder, contentDescription = "Filter")
+                            }
+
                         }
                     }
                 )
@@ -94,6 +139,7 @@ fun SportScreen(
                     CircularProgressIndicator()
                 }
             }
+
             uiState.error != null -> {
                 Box(
                     modifier = Modifier
@@ -124,6 +170,7 @@ fun SportScreen(
                     }
                 }
             }
+
             uiState.items.isEmpty() && uiState.searchQuery.isNotEmpty() -> {
                 Box(
                     modifier = Modifier
@@ -147,6 +194,7 @@ fun SportScreen(
                     }
                 }
             }
+
             else -> {
                 LazyColumn(
                     modifier = modifier
@@ -166,9 +214,11 @@ fun SportScreen(
                                     onSportClick = { viewModel.toggleSportExpanded(sport.id) }
                                 )
                             }
+
                             UiModelType.EVENT -> {
                                 val event = item as EventUiModel
                                 EventItem(
+                                    viewModel = viewModel,
                                     event = event,
                                     onFavoriteClick = { viewModel.toggleEventFavorite(event.id) }
                                 )
@@ -290,6 +340,7 @@ fun SportHeader(
 
 @Composable
 fun EventItem(
+    viewModel: SportViewModel,
     event: EventUiModel,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -347,11 +398,7 @@ fun EventItem(
 
                     Spacer(modifier = Modifier.width(4.dp))
 
-                    Text(
-                        text = event.startTime,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    EventCountdown(viewModel = viewModel, event = event)
                 }
             }
 
@@ -368,4 +415,31 @@ fun EventItem(
             }
         }
     }
+}
+
+/**
+ * A composable that displays the time remaining until an event.
+ * If less than 3 hours remain, it shows a detailed countdown.
+ */
+@Composable
+fun EventCountdown(
+    viewModel: SportViewModel,
+    event: EventUiModel
+) {
+    // State to hold the current display text
+    var timeRemainingText by remember { mutableStateOf("") }
+
+    // Update the countdown every second when close to the event
+    LaunchedEffect(key1 = Unit) {
+        while (true) {
+            timeRemainingText = viewModel.updateEventTime(event)
+            // Update every second for smooth countdown
+            delay(1.seconds)
+        }
+    }
+    Text(
+        text = timeRemainingText,
+        fontSize = 14.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
